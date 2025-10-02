@@ -9,11 +9,23 @@ Future<void> main() async {
   stdout.writeln('Starting fix_me_mcp server...');
   final process = await Process.start('dart', ['run', 'bin/fix_me_mcp.dart']);
 
+  // Tee the server's raw stdio to the console while also feeding the MCP client.
+  final serverOut = StreamController<List<int>>(sync: true);
+  process.stdout.listen((chunk) {
+    stdout.write('srv> ');
+    stdout.add(chunk);
+    serverOut.add(chunk);
+  });
+  process.stderr.listen((chunk) {
+    stderr.write('srv err> ');
+    stderr.add(chunk);
+  });
+
   final client = MCPClient(
     Implementation(name: 'debug client', version: '0.1.0'),
   );
   final server = client.connectServer(
-    stdioChannel(input: process.stdout, output: process.stdin),
+    stdioChannel(input: serverOut.stream, output: process.stdin),
   );
   unawaited(server.done.then((_) => process.kill()));
 
@@ -31,39 +43,38 @@ Future<void> main() async {
     stdout.writeln('- ${t.name}');
   }
 
-  stdout.writeln('Enter diagnostic id (empty to quit):');
+  stdout.writeln('Enter diagnostic id(s) separated by spaces (empty to quit):');
   final lines = stdin.transform(utf8.decoder).transform(const LineSplitter());
   await for (final line in lines) {
-    final id = line.trim();
-    if (id.isEmpty) break;
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) break;
+    final parts = trimmed
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
     try {
+      final arguments = parts.length == 1
+          ? {'id': parts.first}
+          : {'ids': parts};
       final res = await server.callTool(
-        CallToolRequest(name: 'describe_diagnostic', arguments: {'id': id}),
+        CallToolRequest(name: 'describe_diagnostic', arguments: arguments),
       );
-      if (res.isError == true) {
-        stderr.writeln('Error: ${_stringifyContent(res.content)}');
-      } else {
-        stdout.writeln(_stringifyContent(res.content));
-      }
+      // Print raw response structure for debugging as pretty JSON.
+      stdout.writeln('raw:');
+      stdout.writeln(getPrettyJSONString(res));
     } catch (e) {
       stderr.writeln('Call failed: $e');
     }
-    stdout.writeln('Enter diagnostic id (empty to quit):');
+    stdout.writeln(
+      'Enter diagnostic id(s) separated by spaces (empty to quit):',
+    );
   }
 
   await client.shutdown();
   process.kill();
 }
 
-String _stringifyContent(List<Content> content) {
-  if (content.isEmpty) return '';
-  final buffer = StringBuffer();
-  for (final c in content) {
-    if (c is TextContent) {
-      buffer.writeln(c.text);
-    } else {
-      buffer.writeln('[${c.type}]');
-    }
-  }
-  return buffer.toString().trimRight();
+String getPrettyJSONString(Object? jsonObject) {
+  final encoder = const JsonEncoder.withIndent('  ');
+  return encoder.convert(jsonObject);
 }

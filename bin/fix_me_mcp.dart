@@ -72,20 +72,58 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
         'id': Schema.string(
           description: 'Diagnostic id, e.g. \'discarded_result\'',
         ),
+        'ids': Schema.list(
+          description: 'Multiple diagnostic ids',
+          items: Schema.string(),
+        ),
       },
-      required: ['id'],
     ),
   );
 
   Future<CallToolResult> _describeDiagnostic(CallToolRequest request) async {
-    final String id = (request.arguments!['id'] as String).trim();
-    final String? description = await diagnostics.lookupDescription(id);
-    if (description == null) {
+    final args = request.arguments ?? const {};
+    if (args.containsKey('ids')) {
+      final raw = args['ids'];
+      if (raw is! List) {
+        return CallToolResult(
+          isError: true,
+          content: [TextContent(text: 'Field `ids` must be a list of strings')],
+        );
+      }
+      final ids = raw
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      if (ids.isEmpty) {
+        return CallToolResult(
+          isError: true,
+          content: [TextContent(text: 'No diagnostic ids provided')],
+        );
+      }
+      final descriptions = await Future.wait(
+        ids.map(diagnostics.lookupDescription),
+      );
+      final lines = <String>[];
+      for (var i = 0; i < ids.length; i++) {
+        final id = ids[i];
+        final desc = descriptions[i];
+        lines.add(desc == null ? '$id: <unknown>' : '$id: $desc');
+      }
+      return CallToolResult(content: [TextContent(text: lines.join('\n'))]);
+    }
+
+    if (!args.containsKey('id')) {
       return CallToolResult(
         isError: true,
-        content: [TextContent(text: 'Unknown diagnostic id: $id')],
+        content: [TextContent(text: 'Missing required field: `id` or `ids`')],
       );
     }
-    return CallToolResult(content: [TextContent(text: description)]);
+
+    final String id = (args['id'] as String).trim();
+    final String? description = await diagnostics.lookupDescription(id);
+    return CallToolResult(
+      isError: description == null,
+      content: [TextContent(text: description ?? 'Unknown diagnostic id: $id')],
+    );
   }
 }
