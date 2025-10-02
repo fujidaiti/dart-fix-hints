@@ -100,16 +100,16 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
           content: [TextContent(text: 'No diagnostic ids provided')],
         );
       }
-      final descriptions = await Future.wait(
-        ids.map(diagnostics.lookupDescription),
-      );
-      final lines = <String>[];
+      final descriptions = ids.map(diagnostics.lookupDescription).toList();
+      final contents = <Content>[];
       for (var i = 0; i < ids.length; i++) {
         final id = ids[i];
         final desc = descriptions[i];
-        lines.add(desc == null ? '$id: <unknown>' : '$id: $desc');
+        contents.add(
+          TextContent(text: desc == null ? '$id: <unknown>' : '$id: $desc'),
+        );
       }
-      return CallToolResult(content: [TextContent(text: lines.join('\n'))]);
+      return CallToolResult(content: contents);
     }
 
     if (!args.containsKey('id')) {
@@ -120,7 +120,7 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
     }
 
     final String id = (args['id'] as String).trim();
-    final String? description = await diagnostics.lookupDescription(id);
+    final String? description = diagnostics.lookupDescription(id);
     return CallToolResult(
       isError: description == null,
       content: [TextContent(text: description ?? 'Unknown diagnostic id: $id')],

@@ -1,4 +1,0 @@
-diagnostics:
-  discarded_result: >-
-    A value was computed but not used. This often indicates a missing await,
-    an ignored return value, or an unintended expression with no effect.

@@ -1,6 +1,7 @@
 name: fix_me_mcp
 description: A sample command-line application with basic argument parsing.
 version: 0.0.1
+publish_to: none
 # repository: https://github.com/my_org/my_repo
 
 environment:
@@ -11,7 +12,6 @@ dependencies:
   args: ^2.7.0
   dart_mcp:
     path: ai/pkgs/dart_mcp
-  yaml: ^3.1.2
 
 dev_dependencies:
   lints: ^6.0.0
