@@ -1,3 +1,4 @@
 {
-  "dart.sdkPath": "/Users/fujidaiti/.fvm/versions/stable/bin/cache/dart-sdk"
+  "dart.sdkPath": ".fvm/versions/stable/bin/cache/dart-sdk",
+  "dart.flutterSdkPath": ".fvm/versions/stable"
 }
