@@ -1,3 +1,5 @@
+# fix_me_mcp (WIP)
+
 ## Overview
 
 `fix_me_mcp` is a minimal Dart MCP server that exposes a tool to describe diagnostics by id(s). It communicates over stdio and is intended to be hosted by an AI agent or any MCP-compliant client.
@@ -65,3 +67,7 @@ The server returns TextContent entries as described above.
 
 1) Add a diagnostic: update `kDiagnosticDescriptions` in `lib/diagnostics.dart`.
 2) Add a tool: define a new `Tool`, implement a handler, and register it in the server constructor.
+
+## See also
+
+- [How do I break a string in YAML over multiple lines?](https://stackoverflow.com/a/21699210): A great free content on the internet that explains the YAML's mystrerious syntax of writing multiline strings.
