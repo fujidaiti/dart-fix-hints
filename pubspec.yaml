@@ -1,17 +1,14 @@
 name: fix_me_mcp
-description: A sample command-line application with basic argument parsing.
+description: A MCP server that provides typical fixes for given Dart/Flutter lint errors.
 version: 0.0.1
-publish_to: none
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/fujidaiti/dart-fix-hints.git
 
 environment:
   sdk: ^3.9.2
 
-# Add regular dependencies here.
 dependencies:
   args: ^2.7.0
-  dart_mcp:
-    path: ai/pkgs/dart_mcp
+  dart_mcp: ^0.3.3
 
 dev_dependencies:
   lints: ^6.0.0

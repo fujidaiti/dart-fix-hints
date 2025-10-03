@@ -84,10 +84,11 @@ packages:
   dart_mcp:
     dependency: "direct main"
     description:
-      path: "ai/pkgs/dart_mcp"
-      relative: true
-    source: path
-    version: "0.3.4-wip"
+      name: dart_mcp
+      sha256: "2b34cbd60e3b64e7f770a453b84c5f569f096f6044ea343ddffc99f6b366de45"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.3"
   file:
     dependency: transitive
     description:
