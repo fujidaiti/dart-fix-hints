@@ -3,8 +3,7 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:dart_mcp/stdio.dart';
-
-import '../lib/diagnostics.dart' as diagnostics;
+import 'package:fix_me_mcp/diagnostics.dart' as diagnostics;
 
 const String version = '0.0.1';
 
