@@ -35,6 +35,13 @@ import 'package:flutter/material.dart';
 ''',
 };
 
-String? lookupDescription(String id) {
-  return kDiagnosticDescriptions[id];
+class DiagnosticsTable {
+  final Map<String, String> _overrides;
+
+  DiagnosticsTable({Map<String, String> overrides = const {}})
+    : _overrides = Map.unmodifiable(overrides);
+
+  String? lookupDescription(String id) {
+    return _overrides[id] ?? kDiagnosticDescriptions[id];
+  }
 }

@@ -1,10 +1,11 @@
 import 'dart:async';
 
+import 'package:dart_fix_hints/diagnostics.dart' show DiagnosticsTable;
 import 'package:dart_mcp/client.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 
-import '../bin/fix_me_mcp.dart' show MCPDiagnosticsServer, version;
+import '../bin/dart_fix_hints.dart' show MCPDiagnosticsServer, version;
 
 final class _TestClient extends MCPClient {
   _TestClient() : super(Implementation(name: 'test client', version: '0.1.0'));
@@ -16,6 +17,7 @@ void main() {
   late StreamChannel<String> clientChannel;
   late StreamChannel<String> serverChannel;
   late MCPDiagnosticsServer server;
+  late DiagnosticsTable table;
   late _TestClient client;
   late ServerConnection conn;
   late InitializeResult init;
@@ -33,7 +35,8 @@ void main() {
       serverToClient.sink,
     );
 
-    server = MCPDiagnosticsServer(serverChannel);
+    table = DiagnosticsTable();
+    server = MCPDiagnosticsServer(serverChannel, table);
     client = _TestClient();
     conn = client.connectServer(clientChannel);
 
@@ -54,7 +57,7 @@ void main() {
   });
 
   test('initializes with expected server info', () async {
-    expect(init.serverInfo.name, 'fix_me_mcp diagnostics server');
+    expect(init.serverInfo.name, 'dart_fix_hints diagnostics server');
     expect(init.serverInfo.version, version);
     expect(init.protocolVersion, ProtocolVersion.latestSupported);
   });
@@ -69,7 +72,7 @@ void main() {
     final result = await conn.callTool(
       CallToolRequest(
         name: 'describe_diagnostic',
-        arguments: {'id': 'discarded_result'},
+        arguments: {'id': 'discarded_future'},
       ),
     );
     expect(result.isError ?? false, false);
@@ -77,7 +80,7 @@ void main() {
     final text = TextContent.fromMap(
       result.content.single as Map<String, Object?>,
     );
-    expect(text.text, contains('computed but not used'));
+    expect(text.text, contains('unawaited'));
   });
 
   test('errors for unknown id', () async {

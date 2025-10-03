@@ -1,9 +1,10 @@
 import 'dart:io' as io;
 
 import 'package:args/args.dart';
+import 'package:dart_fix_hints/diagnostics.dart' as diagnostics;
 import 'package:dart_mcp/server.dart';
 import 'package:dart_mcp/stdio.dart';
-import 'package:fix_me_mcp/diagnostics.dart' as diagnostics;
+import 'package:yaml/yaml.dart' as yaml;
 
 const String version = '0.0.1';
 
@@ -21,11 +22,17 @@ ArgParser buildParser() {
       negatable: false,
       help: 'Show additional command output.',
     )
-    ..addFlag('version', negatable: false, help: 'Print the tool version.');
+    ..addFlag('version', negatable: false, help: 'Print the tool version.')
+    ..addOption(
+      'override',
+      valueHelp: 'path/to/diagnostics.yaml',
+      help:
+          'Path to YAML file providing diagnostic descriptions that override defaults.',
+    );
 }
 
 void printUsage(ArgParser argParser) {
-  print('Usage: dart fix_me_mcp.dart <flags> [arguments]');
+  print('Usage: dart dart_fix_hints.dart <flags> [arguments]');
   print(argParser.usage);
 }
 
@@ -39,11 +46,44 @@ void main(List<String> arguments) {
       return;
     }
     if (results.flag('version')) {
-      io.stdout.writeln('fix_me_mcp version: $version');
+      io.stdout.writeln('dart_fix_hints version: $version');
       return;
     }
 
-    MCPDiagnosticsServer(stdioChannel(input: io.stdin, output: io.stdout));
+    final String? overridePath = results.option('override');
+    var table = diagnostics.DiagnosticsTable();
+    if (overridePath != null && overridePath.trim().isNotEmpty) {
+      final file = io.File(overridePath);
+      if (!file.existsSync()) {
+        throw FormatException('Override file not found: $overridePath');
+      }
+      final String yamlSource = file.readAsStringSync();
+      final dynamic doc = yaml.loadYaml(yamlSource);
+      if (doc is Map) {
+        final Map<String, String> overrides = {};
+        for (final entry in doc.entries) {
+          final key = entry.key?.toString();
+          final value = entry.value;
+          if (key == null) continue;
+          if (value is String) {
+            final trimmed = value.trim();
+            overrides[key] = trimmed;
+          }
+        }
+        if (overrides.isNotEmpty) {
+          table = diagnostics.DiagnosticsTable(overrides: overrides);
+        }
+      } else {
+        throw FormatException(
+          'Override YAML must be a top-level mapping of string keys to string values.',
+        );
+      }
+    }
+
+    MCPDiagnosticsServer(
+      stdioChannel(input: io.stdin, output: io.stdout),
+      table,
+    );
   } on FormatException catch (e) {
     io.stderr.writeln(e.message);
     io.stderr.writeln('');
@@ -52,10 +92,12 @@ void main(List<String> arguments) {
 }
 
 base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
-  MCPDiagnosticsServer(super.channel)
+  final diagnostics.DiagnosticsTable table;
+
+  MCPDiagnosticsServer(super.channel, this.table)
     : super.fromStreamChannel(
         implementation: Implementation(
-          name: 'fix_me_mcp diagnostics server',
+          name: 'dart_fix_hints diagnostics server',
           version: version,
         ),
         instructions: 'Call tools to get diagnostic descriptions by id.',
@@ -99,7 +141,7 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
           content: [TextContent(text: 'No diagnostic ids provided')],
         );
       }
-      final descriptions = ids.map(diagnostics.lookupDescription).toList();
+      final descriptions = ids.map(table.lookupDescription).toList();
       final contents = <Content>[];
       for (var i = 0; i < ids.length; i++) {
         final id = ids[i];
@@ -119,7 +161,7 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
     }
 
     final String id = (args['id'] as String).trim();
-    final String? description = diagnostics.lookupDescription(id);
+    final String? description = table.lookupDescription(id);
     return CallToolResult(
       isError: description == null,
       content: [TextContent(text: description ?? 'Unknown diagnostic id: $id')],

@@ -6,8 +6,11 @@ import 'package:dart_mcp/client.dart';
 import 'package:dart_mcp/stdio.dart';
 
 Future<void> main() async {
-  stdout.writeln('Starting fix_me_mcp server...');
-  final process = await Process.start('dart', ['run', 'bin/fix_me_mcp.dart']);
+  stdout.writeln('Starting dart_fix_hints server...');
+  final process = await Process.start('dart', [
+    'run',
+    'bin/dart_fix_hints.dart',
+  ]);
 
   // Tee the server's raw stdio to the console while also feeding the MCP client.
   final serverOut = StreamController<List<int>>(sync: true);

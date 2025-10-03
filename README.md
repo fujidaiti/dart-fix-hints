@@ -1,8 +1,8 @@
-# fix_me_mcp (WIP)
+# dart_fix_hints (WIP)
 
 ## Overview
 
-`fix_me_mcp` is a minimal Dart MCP server that exposes a tool to describe diagnostics by id(s). It communicates over stdio and is intended to be hosted by an AI agent or any MCP-compliant client.
+`dart_fix_hints` is a minimal Dart MCP server that exposes a tool to describe diagnostics by id(s). It communicates over stdio and is intended to be hosted by an AI agent or any MCP-compliant client.
 
 ### Current tool
 
@@ -23,7 +23,7 @@ dart pub get
 Start the server over stdio:
 
 ```bash
-dart run bin/fix_me_mcp.dart
+dart run bin/dart_fix_hints.dart
 ```
 
 CLI flags:
@@ -49,7 +49,7 @@ The server returns TextContent entries as described above.
 
 ## Project structure
 
-- `bin/fix_me_mcp.dart`: CLI entrypoint and MCP server wiring. Defines `MCPDiagnosticsServer`, registers tools, and binds stdio.
+- `bin/dart_fix_hints.dart`: CLI entrypoint and MCP server wiring. Defines `MCPDiagnosticsServer`, registers tools, and binds stdio.
 - `lib/diagnostics.dart`: Diagnostic registry defined as `const Map<String,String> kDiagnosticDescriptions` with a `lookupDescription(String)` helper.
 - `pubspec.yaml`: Declares a local path dependency on the MCP library.
 - `ai/pkgs/dart_mcp/`: Local MCP library providing protocol types and stdio channel utilities (examples included in `example/`).
