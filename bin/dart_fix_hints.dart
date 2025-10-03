@@ -97,24 +97,27 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
   MCPDiagnosticsServer(super.channel, this.table)
     : super.fromStreamChannel(
         implementation: Implementation(
-          name: 'dart_fix_hints diagnostics server',
+          name: 'dart_fix_hints',
+          title:
+              'Provides common fixes for Dart/Flutter lint errors '
+              "that can not be automatically fixed by 'dart fix' command.",
           version: version,
         ),
-        instructions: 'Call tools to get diagnostic descriptions by id.',
       ) {
     registerTool(describeDiagnosticTool, _describeDiagnostic);
   }
 
   final Tool describeDiagnosticTool = Tool(
     name: 'describe_diagnostic',
-    description: 'Return the description for a diagnostic error id',
+    description:
+        'Returns common fixes for given lint error IDs, such as '
+        "'discarded_futures' and 'comment_references'. "
+        "The error IDs can be obtained from a Dart analyzer or 'dart analyze' command.",
     inputSchema: Schema.object(
       properties: {
-        'id': Schema.string(
-          description: 'Diagnostic id, e.g. \'discarded_result\'',
-        ),
+        'id': Schema.string(description: "Error id, e.g. 'discarded_future'"),
         'ids': Schema.list(
-          description: 'Multiple diagnostic ids',
+          description: 'Multiple error ids',
           items: Schema.string(),
         ),
       },
@@ -138,7 +141,7 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
       if (ids.isEmpty) {
         return CallToolResult(
           isError: true,
-          content: [TextContent(text: 'No diagnostic ids provided')],
+          content: [TextContent(text: 'No error ids provided')],
         );
       }
       final descriptions = ids.map(table.lookupDescription).toList();
