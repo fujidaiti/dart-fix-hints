@@ -4,7 +4,6 @@ import 'package:args/args.dart';
 import 'package:dart_fix_hints/diagnostics.dart' as diagnostics;
 import 'package:dart_mcp/server.dart';
 import 'package:dart_mcp/stdio.dart';
-import 'package:yaml/yaml.dart' as yaml;
 
 const String version = '0.0.1';
 
@@ -22,13 +21,7 @@ ArgParser buildParser() {
       negatable: false,
       help: 'Show additional command output.',
     )
-    ..addFlag('version', negatable: false, help: 'Print the tool version.')
-    ..addOption(
-      'override',
-      valueHelp: 'path/to/diagnostics.yaml',
-      help:
-          'Path to YAML file providing diagnostic descriptions that override defaults.',
-    );
+    ..addFlag('version', negatable: false, help: 'Print the tool version.');
 }
 
 void printUsage(ArgParser argParser) {
@@ -50,35 +43,8 @@ void main(List<String> arguments) {
       return;
     }
 
-    final String? overridePath = results.option('override');
-    var table = diagnostics.DiagnosticsTable();
-    if (overridePath != null && overridePath.trim().isNotEmpty) {
-      final file = io.File(overridePath);
-      if (!file.existsSync()) {
-        throw FormatException('Override file not found: $overridePath');
-      }
-      final String yamlSource = file.readAsStringSync();
-      final dynamic doc = yaml.loadYaml(yamlSource);
-      if (doc is Map) {
-        final Map<String, String> overrides = {};
-        for (final entry in doc.entries) {
-          final key = entry.key?.toString();
-          final value = entry.value;
-          if (key == null) continue;
-          if (value is String) {
-            final trimmed = value.trim();
-            overrides[key] = trimmed;
-          }
-        }
-        if (overrides.isNotEmpty) {
-          table = diagnostics.DiagnosticsTable(overrides: overrides);
-        }
-      } else {
-        throw FormatException(
-          'Override YAML must be a top-level mapping of string keys to string values.',
-        );
-      }
-    }
+    // Load the diagnostics table from the embedded YAML file
+    final table = diagnostics.DiagnosticsTable.load();
 
     MCPDiagnosticsServer(
       stdioChannel(input: io.stdin, output: io.stdout),
@@ -144,14 +110,16 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
           content: [TextContent(text: 'No error ids provided')],
         );
       }
-      final descriptions = ids.map(table.lookupDescription).toList();
+      final entries = ids.map(table.lookup).toList();
       final contents = <Content>[];
       for (var i = 0; i < ids.length; i++) {
         final id = ids[i];
-        final desc = descriptions[i];
-        contents.add(
-          TextContent(text: desc == null ? '$id: <unknown>' : '$id: $desc'),
-        );
+        final entry = entries[i];
+        if (entry == null) {
+          contents.add(TextContent(text: '$id: <unknown>'));
+        } else {
+          contents.add(TextContent(text: '$id:\n${entry.format()}'));
+        }
       }
       return CallToolResult(content: contents);
     }
@@ -164,10 +132,12 @@ base class MCPDiagnosticsServer extends MCPServer with ToolsSupport {
     }
 
     final String id = (args['id'] as String).trim();
-    final String? description = table.lookupDescription(id);
+    final diagnostics.DiagnosticEntry? entry = table.lookup(id);
     return CallToolResult(
-      isError: description == null,
-      content: [TextContent(text: description ?? 'Unknown diagnostic id: $id')],
+      isError: entry == null,
+      content: [
+        TextContent(text: entry?.format() ?? 'Unknown diagnostic id: $id')
+      ],
     );
   }
 }
