@@ -35,7 +35,7 @@ void main() {
       serverToClient.sink,
     );
 
-    table = DiagnosticsTable();
+    table = DiagnosticsTable.load();
     server = MCPDiagnosticsServer(serverChannel, table);
     client = _TestClient();
     conn = client.connectServer(clientChannel);
@@ -72,7 +72,7 @@ void main() {
     final result = await conn.callTool(
       CallToolRequest(
         name: 'describe_diagnostic',
-        arguments: {'id': 'discarded_future'},
+        arguments: {'id': 'discarded_futures'},
       ),
     );
     expect(result.isError ?? false, false);
